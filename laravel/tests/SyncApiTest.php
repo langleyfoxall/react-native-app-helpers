@@ -1,6 +1,6 @@
 <?php
 
-namespace JamesWildDev\DBMLParser\Tests;
+namespace JamesWildDev\ReactNativeAppHelpers\Tests;
 
 use Illuminate\Support\Facades\Route;
 use JamesWildDev\ReactNativeAppHelpers\SyncApi;
@@ -20,18 +20,26 @@ final class SyncApiTest extends TestCase
   public function testGenerateRoutes(): void
   {
     $syncApi = (new SyncApi())
-      ->addSingleton('Example Singleton A', ExampleSingletonA::class)
-      ->addSingleton('Example Singleton B', ExampleSingletonB::class)
-      ->addCollection(ExampleCollectionAModel::class, ExampleCollectionAController::class)
-      ->addCollection(ExampleCollectionBModel::class, ExampleCollectionBController::class);
+      ->withMe(ExampleSingletonA::class, ExampleSingletonA::class)
+      ->withMe(ExampleSingletonB::class, ExampleSingletonB::class)
+      ->withCollection(
+        ExampleCollectionAModel::class,
+        'exampleTest',
+        ExampleSingletonA::class,
+        ExampleCollectionAController::class,
+      )
+      ->withCollection(
+        ExampleCollectionBModel::class,
+        'exampleTest',
+        ExampleSingletonB::class,
+        ExampleCollectionBController::class,
+      );
 
     $syncApi->generateRoutes();
 
     Route::shouldHaveReceived('get')
       ->with('preflight', Matchers::callableValue())
       ->once();
-
-    var_dump(Route::mockery_findExpectation('preflight', [Matchers::callableValue()]));
 
     // TODO assert preflight response.
 
@@ -47,29 +55,29 @@ final class SyncApiTest extends TestCase
 
     Route::shouldHaveReceived('get')
       ->with(
-        'example-collection-a-models/{exampleCollectionAModel:uuid}',
-        [ExampleCollectionAController::class, 'show']
+        'example-collection-a-models/{uuid}',
+        Matchers::callableValue()
       )
       ->once();
 
     Route::shouldHaveReceived('put')
       ->with(
-        'example-collection-a-models/{exampleCollectionAModel:uuid}',
-        [ExampleCollectionAController::class, 'update']
+        'example-collection-a-models/{uuid}',
+        [ExampleCollectionAController::class, 'upsert']
       )
       ->once();
 
     Route::shouldHaveReceived('get')
       ->with(
-        'example-collection-b-models/{exampleCollectionBModel:uuid}',
-        [ExampleCollectionBController::class, 'show']
+        'example-collection-b-models/{uuid}',
+        Matchers::callableValue()
       )
       ->once();
 
     Route::shouldHaveReceived('put')
       ->with(
-        'example-collection-b-models/{exampleCollectionBModel:uuid}',
-        [ExampleCollectionBController::class, 'update']
+        'example-collection-b-models/{uuid}',
+        [ExampleCollectionBController::class, 'upsert']
       )
       ->once();
 
@@ -79,7 +87,7 @@ final class SyncApiTest extends TestCase
     Route::shouldHaveReceived('put')
       ->times(2);
 
-    Route::shouldNotReceive([
+    $unexpectedRouteMethods = [
       'post',
       'patch',
       'delete',
@@ -101,7 +109,11 @@ final class SyncApiTest extends TestCase
       'current',
       'currentRouteName',
       'currentRouteAction',
-    ]);
+    ];
+
+    foreach ($unexpectedRouteMethods as $unexpectedRouteMethod) {
+      Route::shouldNotReceive($unexpectedRouteMethod);
+    }
   }
 
   public function tearDown(): void
@@ -114,4 +126,18 @@ final class SyncApiTest extends TestCase
 
     Mockery::close();
   }
+}
+
+final class ExampleCollectionAModel {}
+
+final class ExampleCollectionBModel {}
+
+final class ExampleCollectionAController
+{
+  public function upsert(): void {}
+}
+
+final class ExampleCollectionBController
+{
+  public function upsert(): void {}
 }

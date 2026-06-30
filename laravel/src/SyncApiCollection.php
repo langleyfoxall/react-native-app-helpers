@@ -146,9 +146,11 @@ class SyncApiCollection implements SyncApiCollectionInterface
   public function generateCollectionRoutes(): void
   {
     if ($this->resourceClass !== null) {
+      $resourceClass = $this->resourceClass;
+
       Route::get(
         $this->routeFragment . '/{uuid}',
-        function (string $uuid) {
+        function (string $uuid) use ($resourceClass) {
           $scopeName = $this->scopeName;
 
           $model = $this
@@ -159,7 +161,7 @@ class SyncApiCollection implements SyncApiCollectionInterface
           if ($model) {
             return [
               'version' => $model->getVersionForSync(),
-              'data' => new $this->resourceClass($model),
+              'data' => new $resourceClass($model),
             ];
           } else {
             throw new ModelNotFoundException();
