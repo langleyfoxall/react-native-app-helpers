@@ -4,6 +4,7 @@ namespace JamesWildDev\ReactNativeAppHelpers;
 
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Helpers for working with syncable models.
